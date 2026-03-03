@@ -24,10 +24,12 @@ contract Propietario {
         propietario = _newOwner;
     }
 
+    //soloPropietarioPuedeLlamar can only be called by the owner.
     function soloPropietarioPuedeLlamar() view external soloPropietario returns (string memory) {
         return "Funcion ejecutada solo por el propietario del contrato";
     }
 
+    //cualquieraPuedeLlamar can be called by any user.
     function cualquieraPuedeLlamar() pure external  returns (string memory) {
         return "Funcion ejecutada por cualquier usuario";
     }
