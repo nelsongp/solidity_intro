@@ -2,7 +2,7 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 contract IterableMapping {
-    // 1. El almacén de datos
+    // 1. El almacén de datos s
     mapping(address => uint) public balances;
     
     // 2. Para saber si ya hemos visto esta dirección (evita duplicados en la lista)

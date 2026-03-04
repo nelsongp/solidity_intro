@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
+//contrato A
 contract A {
     // virtual: Indica que esta función PUEDE ser modificada por un hijo
     function foo() public pure virtual returns(string memory) {

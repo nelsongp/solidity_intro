@@ -2,7 +2,7 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 contract ControlAcceso {
-    // Eventos para notificar cambios a aplicaciones externas (DApps)
+    // Eventos para notificar cambios a aplicaciones externas (DApps)s
     event AsignarRole(bytes32 indexed role, address indexed account);
     event RevocarRole(bytes32 indexed role, address indexed account);
 
