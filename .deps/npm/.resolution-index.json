@@ -340,19 +340,52 @@
   "@openzeppelin/contracts@5.6.1/utils/ShortStrings.sol": {
     "./StorageSlot.sol": ".deps/npm/@openzeppelin/contracts@5.6.1/utils/StorageSlot.sol"
   },
-  "ERC-20/Interfaces/IERC20Metadata.sol": {
+  "ERC-20/Contracts/IERC20.sol": {
     "__sources__": {
-      "ERC-20/Interfaces/IERC20Metadata.sol": {
-        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.20;\r\n\r\ninterface IERC20MEtadata {\r\n    //funciones opcionales\r\n    function name() external view returns (string memory);\r\n    function symbol() external view returns (string memory);\r\n    function decimals() external view returns (uint8);\r\n}",
-        "file": "ERC-20/Interfaces/IERC20Metadata.sol"
+      "ERC-20/Contracts/IERC20.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.20;\r\n\r\ncontract ERC20",
+        "file": "ERC-20/Contracts/IERC20.sol"
       }
     }
   },
-  "ERC-20/Interfaces/IERC20.sol": {
+  "ERC-20/Interfaces/ERC20.sol": {
     "__sources__": {
+      "ERC-20/Interfaces/ERC20.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.20;\r\n\r\ninterface IERC20 {\r\n    // EVENTOS: Para que aplicaciones externas (como Etherscan) rastreen movimientos\r\n    event Transfer(address indexed _from, address indexed _to, uint256 _value);\r\n    event Approval(address indexed _owner, address indexed _spender, uint256 _value);\r\n\r\n    // FUNCIONES DE LECTURA (view): No cuestan gas si se llaman desde fuera\r\n    function totalSupply() external view returns(uint256); // Cantidad total de tokens en existencia\r\n    function balanceOf(address _owner) external view returns(uint256); // Saldo de una cuenta específica\r\n    function allowance(address _owner, address _spender) external view returns(uint256); // Cuánto puede gastar un tercero\r\n\r\n    // FUNCIONES DE ESCRITURA: Modifican el estado y cuestan gas\r\n    function transfer(address _to, uint256 _value) external returns(bool); // Envío directo de tokens\r\n    function approve(address _spender, uint256 _value) external returns(bool); // Autorizar a alguien más\r\n    function transferFrom(address _from, address _to, uint256 _value) external returns (bool); // Mover tokens autorizados\r\n}",
+        "file": "ERC-20/Interfaces/ERC20.sol"
+      }
+    }
+  },
+  "ERC-20/Interfaces/ERC20Metadata.sol": {
+    "__sources__": {
+      "ERC-20/Interfaces/ERC20Metadata.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.20;\r\n\r\ninterface IERC20MEtadata {\r\n    //funciones opcionales\r\n    function name() external view returns (string memory);\r\n    function symbol() external view returns (string memory);\r\n    function decimals() external view returns (uint8);\r\n}",
+        "file": "ERC-20/Interfaces/ERC20Metadata.sol"
+      }
+    }
+  },
+  "ERC-20/Contracts/ERC20.sol": {
+    "../Interfaces/IERC20.sol": "ERC-20/Interfaces/IERC20.sol",
+    "../Interfaces/IERC20Metadata.sol": "ERC-20/Interfaces/IERC20Metadata.sol"
+  },
+  "ERC-20/Main.sol": {
+    "./Contracts/ERC20.sol": "ERC-20/Contracts/ERC20.sol",
+    "__sources__": {
+      "ERC-20/Main.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.20;\r\n\r\nimport \"./Contracts/ERC20.sol\";\r\n\r\ncontract Main {\r\n    ERC20 private _token;\r\n    address private owner;\r\n    address private contractAddress;\r\n\r\n    constructor(){\r\n        _token = new ERC20(\"TEST Coin\", \"TCI\");\r\n        owner = msg.sender;\r\n        contractAddress = address(this);\r\n    }\r\n\r\n    // Funcion para obtener el precio del token\r\n    function priceTokens(uint256 _numTokens) public pure returns(uint256) {\r\n        return _numTokens * 1 ether;\r\n    }\r\n\r\n    // Funcion para hacer la venta de un token\r\n    function buyTokens(address _client, uint256 _amount) public payable {\r\n        uint256 price = priceTokens(_amount);\r\n        require(msg.value >= price, \"buy more tokens\");\r\n        uint256 returnValue = msg.value - price;\r\n        payable(msg.sender).transfer(returnValue);\r\n\r\n        _token.transfer(_client, _amount);\r\n    }\r\n\r\n    // Funcion para generar nuevos tokens\r\n    function generateTokens(uint256 _amount) public {\r\n        _token.increaseTotalSupply(contractAddress, _amount);\r\n    }\r\n\r\n    // Funcion para obtener la direccion del smartcontract\r\n    function getContractAddress() public view returns(address){\r\n        return contractAddress;\r\n    }\r\n\r\n    // Funcion para obtener el balance de una cuenta\r\n    function balanceAccount(address _account) public view returns(uint256){\r\n        return _token.balanceOf(_account);\r\n    }\r\n\r\n    // Devuelve el total de token totales en el contrato\r\n    function getTotalSupply() public view returns(uint256){\r\n        return _token.totalSupply();\r\n    }\r\n}",
+        "file": "ERC-20/Main.sol"
+      },
+      "ERC-20/Contracts/ERC20.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.20;\r\n\r\nimport \"../Interfaces/IERC20.sol\";\r\nimport \"../Interfaces/IERC20Metadata.sol\";\r\n\r\ncontract ERC20 is IERC20, IERC20Metadata {\r\n    mapping(address => uint256) private _balances;\r\n    mapping(address => mapping(address => uint256)) private _allowances;\r\n    uint256 private _totalSupply;\r\n\r\n    string private _name;\r\n    string private _symbol;\r\n\r\n    constructor(string memory name_, string memory symbol_){\r\n        _name = name_;\r\n        _symbol = symbol_;\r\n    }\r\n\r\n    //FUNCIONES OPCIONALES\r\n    function name() public view override returns(string memory){\r\n        return _name;\r\n    }\r\n    function symbol() public view override returns(string memory){\r\n        return _symbol;\r\n    }\r\n    function decimals() public pure override returns(uint8){\r\n        return 18;\r\n    }\r\n\r\n    //FUNCIONES OBLIGATORIAS\r\n    function totalSupply() public view override returns(uint256){\r\n        return _totalSupply;\r\n    }\r\n    function balanceOf(address _account) public view override returns(uint256){\r\n        return _balances[_account];\r\n    }\r\n\r\n    function transfer(address _to, uint256 _amount) public override returns(bool){\r\n        address owner = msg.sender;\r\n        _transfer(owner, _to, _amount);\r\n        return true;\r\n    }\r\n\r\n    function allowance(address _owner, address _spender) public view override returns(uint256){\r\n        return _allowances[_owner][_spender];\r\n    }\r\n\r\n    function approve(address _spender, uint256 _amount) public override returns(bool){\r\n        address owner = msg.sender;\r\n        _approve(owner, _spender, _amount);\r\n        return true;\r\n    }\r\n    \r\n    function transferFrom(address _from, address _to, uint256 _amount) public override returns(bool){\r\n        address spender = msg.sender;\r\n        _spendAllowance(_from, spender, _amount);\r\n        _transfer(_from, _to, _amount);\r\n        return true;\r\n    }\r\n\r\n    function _transfer(address _from, address _to, uint256 _amount) internal {\r\n        require(_from != address(0), \"ERC20: Transfer from the zero address\");\r\n        require(_to != address(0), \"ERC20: Transfer to the zero address\");\r\n\r\n        uint256 fromBalance = _balances[_from];\r\n        require(fromBalance >= _amount, \"ERC20: transfer amount exceeds balance\");\r\n\r\n        //desactiva la funcion de subdesbordamiento \r\n        unchecked {\r\n            _balances[_from] = fromBalance = _amount;\r\n        }        \r\n        _balances[_to] += _amount;\r\n\r\n        emit Transfer(_from, _to, _amount);\r\n    }\r\n\r\n    function _approve(address _owner, address _spender, uint256 _amount) internal {\r\n        require(_owner != address(0), \"ERC20: Approve from the zero address\");\r\n        require(_spender != address(0), \"ERC20: Approve to the zero address\");\r\n\r\n        _allowances[_owner][_spender] = _amount;\r\n        emit Approval(_owner, _spender, _amount);\r\n    }\r\n\r\n    function _spendAllowance(address _owner, address _spender, uint256 _amount) internal {\r\n        uint256 currentAllowance = _allowances[_owner][_spender];\r\n\r\n        if(currentAllowance != type(uint256).max){\r\n            require(currentAllowance >= _amount, \"ERC20: insuficient allowance\");\r\n            _approve(_owner, _spender, currentAllowance - _amount);\r\n        }        \r\n    }\r\n\r\n    //FUNCIONES ADICIONALES\r\n    function _mint(address _account, uint256 _amount) internal {\r\n        require(_account != address(0), \"ERC20: Mint to the zero address\");\r\n        _totalSupply += _amount;\r\n        _balances[_account] += _amount;\r\n        \r\n        emit Transfer(address(0), _account, _amount);\r\n    }\r\n\r\n    function _burn(address _account, uint256 _amount) internal {\r\n        require(_account != address(0), \"ERC20: Burn from the zero address\");\r\n        uint256 accountBalance = _balances[_account];\r\n        require(accountBalance >= _amount, \"ERC20: Burn amount exceeds balance\");        \r\n        _balances[_account] = accountBalance - _amount;                \r\n        _totalSupply -= _amount;\r\n\r\n        emit Transfer(_account, address(0), _amount);\r\n    }\r\n\r\n    function increaseTotalSupply(address _account, uint256 _amount) public {\r\n        _mint(_account, _amount);\r\n    }\r\n        \r\n}",
+        "file": "ERC-20/Contracts/ERC20.sol"
+      },
       "ERC-20/Interfaces/IERC20.sol": {
         "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.20;\r\n\r\ninterface IERC20 {\r\n    // EVENTOS: Para que aplicaciones externas (como Etherscan) rastreen movimientos\r\n    event Transfer(address indexed _from, address indexed _to, uint256 _value);\r\n    event Approval(address indexed _owner, address indexed _spender, uint256 _value);\r\n\r\n    // FUNCIONES DE LECTURA (view): No cuestan gas si se llaman desde fuera\r\n    function totalSupply() external view returns(uint256); // Cantidad total de tokens en existencia\r\n    function balanceOf(address _owner) external view returns(uint256); // Saldo de una cuenta específica\r\n    function allowance(address _owner, address _spender) external view returns(uint256); // Cuánto puede gastar un tercero\r\n\r\n    // FUNCIONES DE ESCRITURA: Modifican el estado y cuestan gas\r\n    function transfer(address _to, uint256 _value) external returns(bool); // Envío directo de tokens\r\n    function approve(address _spender, uint256 _value) external returns(bool); // Autorizar a alguien más\r\n    function transferFrom(address _from, address _to, uint256 _value) external returns (bool); // Mover tokens autorizados\r\n}",
         "file": "ERC-20/Interfaces/IERC20.sol"
+      },
+      "ERC-20/Interfaces/IERC20Metadata.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.20;\r\n\r\ninterface IERC20Metadata {\r\n    //funciones opcionales\r\n    function name() external view returns (string memory);\r\n    function symbol() external view returns (string memory);\r\n    function decimals() external view returns (uint8);\r\n}",
+        "file": "ERC-20/Interfaces/IERC20Metadata.sol"
       }
     }
   }
